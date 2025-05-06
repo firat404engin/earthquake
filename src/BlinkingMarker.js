@@ -10,7 +10,17 @@ const BlinkingIcon = L.icon({
   popupAnchor: [0, -24],
 });
 
-export default function BlinkingMarker({ position, popupContent }) {
+// Küçük depremler için yeşil ikon
+const GreenBlinkingIcon = L.icon({
+  iconUrl: "data:image/svg+xml,%3Csvg width='48' height='48' viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cstyle%3E@keyframes wave1{0%25{r:10;opacity:0.5;}100%25{r:22;opacity:0;}}@keyframes wave2{0%25{r:6;opacity:0.5;}100%25{r:16;opacity:0;}}.wave1{stroke:%23007f3f;stroke-width:2;fill:none;animation:wave1 1.5s infinite;}.wave2{stroke:%23007f3f;stroke-width:2;fill:none;animation:wave2 1.5s infinite 0.4s;}%3C/style%3E%3C/defs%3E%3Ccircle class='wave1' cx='24' cy='24' r='10'/%3E%3Ccircle class='wave2' cx='24' cy='24' r='6'/%3E%3Ccircle cx='24' cy='24' r='5' fill='%23007f3f'/%3E%3C/svg%3E",
+  iconSize: [48, 48],
+  iconAnchor: [24, 24],
+  popupAnchor: [0, -24],
+});
+
+export { GreenBlinkingIcon };
+
+export default function BlinkingMarker({ position, popupContent, icon }) {
   const markerRef = useRef();
   const map = useMap();
 
@@ -26,7 +36,7 @@ export default function BlinkingMarker({ position, popupContent }) {
   }, [position, map]);
 
   return (
-    <Marker icon={BlinkingIcon} position={position} ref={markerRef}>
+    <Marker icon={icon || BlinkingIcon} position={position} ref={markerRef}>
       <Popup autoPan={false} closeButton={false} className="big-popup">
         {popupContent && typeof popupContent === 'object' ? (
   <div style={{

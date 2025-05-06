@@ -5,7 +5,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
 import './App.css';
-import BlinkingMarker from './BlinkingMarker';
+import BlinkingMarker, { GreenBlinkingIcon } from './BlinkingMarker';
 import Last100 from './Last100';
 
 import TurkeyHeatLayer from './TurkeyHeatLayer';
@@ -508,33 +508,43 @@ const redIcon = new L.Icon({
               {/* Türkiye deprem ısı dağılımı katmanı */}
               <TurkeyHeatLayer data={quakes.slice(0, 100).map(q => [q.latitude, q.longitude, Math.max(Number(q.magnitude)||1, 1)])} />
              {/* Son 5 deprem için dalga animasyonu */}
-             {last5.map((q, idx) => (
-  <BlinkingMarker
-    key={idx}
-    position={[q.latitude, q.longitude]}
-    popupContent={{
-      title: q.location,
-      date: q.date,
-      time: q.time,
-      mag: q.magnitude,
-      depth: q.depth
-    }}
-  />
-))} 
+             {last5.map((q, idx) => {
+  const mag = Number(q.magnitude);
+  const isSmall = !isNaN(mag) && mag < 3.0;
+  return (
+    <BlinkingMarker
+      key={idx}
+      position={[q.latitude, q.longitude]}
+      popupContent={{
+        title: q.location,
+        date: q.date,
+        time: q.time,
+        mag: q.magnitude,
+        depth: q.depth
+      }}
+      icon={isSmall ? GreenBlinkingIcon : undefined}
+    />
+  );
+})} 
              {/* Diğer depremler için de dalga animasyonu */}
-             {others.map((q, idx) => (
-  <BlinkingMarker
-    key={idx}
-    position={[q.latitude, q.longitude]}
-    popupContent={{
-      title: q.location,
-      date: q.date,
-      time: q.time,
-      mag: q.magnitude,
-      depth: q.depth
-    }}
-  />
-))} 
+             {others.map((q, idx) => {
+  const mag = Number(q.magnitude);
+  const isSmall = !isNaN(mag) && mag < 3.0;
+  return (
+    <BlinkingMarker
+      key={idx}
+      position={[q.latitude, q.longitude]}
+      popupContent={{
+        title: q.location,
+        date: q.date,
+        time: q.time,
+        mag: q.magnitude,
+        depth: q.depth
+      }}
+      icon={isSmall ? GreenBlinkingIcon : undefined}
+    />
+  );
+})} 
            </MapContainer>
         </div>
       )}
