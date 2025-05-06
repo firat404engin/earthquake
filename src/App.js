@@ -137,18 +137,114 @@ const redIcon = new L.Icon({
               <div
                 style={{
                   position:'fixed',
-                  top:22,
-                  right:18,
+                  top:12,
+                  right:10,
+                  zIndex:2500,
+                  background:'linear-gradient(135deg,rgba(255,255,255,0.92) 60%,rgba(240,244,255,0.99) 100%)',
+                  borderRadius:18,
+                  boxShadow:'0 4px 32px 0 #295c8a22, 0 1.5px 0 #fff8',
+                  padding:'10px 8px',
+                  display:'flex',
+                  flexDirection:'column',
+                  alignItems:'center',
+                  gap:9,
+                  backdropFilter:'blur(12px)',
+                  border:'2px solid #e6eaf1',
+                  fontFamily:'Inter,Segoe UI,sans-serif',
+                  transition:'all .28s cubic-bezier(.4,1.4,.5,1)',
+                  willChange:'transform',
+                  overflow:'visible',
+                }}
+              >
+                <button
+                  style={{
+                    background:'#f7f7f9',
+                    color:'#2a2a2a',
+                    border:'1.5px solid #d6d6d6',
+                    borderRadius:12,
+                    fontWeight:600,
+                    fontSize:20,
+                    padding:'10px',
+                    cursor:'pointer',
+                    textDecoration:'none',
+                    boxShadow:'0 2px 8px #0001',
+                    transition:'all .18s',
+                    display:'flex',
+                    alignItems:'center',
+                    justifyContent:'center',
+                    width:44,
+                    height:44,
+                  }}
+                  aria-label="Son Depremler"
+                  onClick={()=>setShowDepremPopup(true)}
+                >
+                  <span style={{fontSize:26}}>🕑</span>
+                </button>
+                <button
+                  style={{
+                    background:'#f7f7f9',
+                    color:'#2a2a2a',
+                    border:'1.5px solid #d6d6d6',
+                    borderRadius:12,
+                    fontWeight:600,
+                    fontSize:20,
+                    padding:'10px',
+                    cursor:'pointer',
+                    textDecoration:'none',
+                    boxShadow:'0 2px 8px #0001',
+                    transition:'all .18s',
+                    display:'flex',
+                    alignItems:'center',
+                    justifyContent:'center',
+                    width:44,
+                    height:44,
+                  }}
+                  aria-label="Hakkımızda"
+                  onClick={()=>setShowAboutPopup(true)}
+                >
+                  <span style={{fontSize:26}}>ℹ️</span>
+                </button>
+                <button
+                  style={{
+                    background:'#f7f7f9',
+                    color:'#2a2a2a',
+                    border:'1.5px solid #d6d6d6',
+                    borderRadius:12,
+                    fontWeight:600,
+                    fontSize:20,
+                    padding:'10px',
+                    cursor:'pointer',
+                    textDecoration:'none',
+                    boxShadow:'0 2px 8px #0001',
+                    transition:'all .18s',
+                    display:'flex',
+                    alignItems:'center',
+                    justifyContent:'center',
+                    width:44,
+                    height:44,
+                  }}
+                  aria-label="Risk Bandı"
+                  onClick={()=>setShowRiskBand(v=>!v)}
+                >
+                  <span style={{fontSize:26}}>🌫️</span>
+                </button>
+              </div>
+            ) : (
+              <div
+                style={{
+                  position:'fixed',
+                  top:32,
+                  right:32,
                   zIndex:2500,
                   minWidth:180,
                   background:'rgba(255,255,255,0.68)',
                   borderRadius:18,
-                  boxShadow:'0 2px 16px 0 #295c8a18',
-                  padding:'10px 14px',
+                  boxShadow:'0 4px 24px 0 #295c8a18',
+                  padding:'10px 16px',
                   display:'flex',
                   flexDirection:'row',
                   alignItems:'center',
-                  gap:10,
+                  gap:14,
                   backdropFilter:'blur(10px)',
                   border:'1.5px solid #e6eaf1',
                   fontFamily:'Inter,Segoe UI,sans-serif',
@@ -156,176 +252,78 @@ const redIcon = new L.Icon({
                   willChange:'transform',
                   overflow:'visible',
                 }}
-                onMouseOver={e=>e.currentTarget.style.transform='scale(1.03)'}
+                onMouseOver={e=>e.currentTarget.style.transform='scale(1.04)'}
                 onMouseOut={e=>e.currentTarget.style.transform='none'}
               >
+                <span style={{fontSize:22,marginRight:6,marginLeft:-4,opacity:0.92,filter:'drop-shadow(0 1px 4px #a8323222)'}} role="img" aria-label="Türkiye">🇹🇷</span>
                 <button
                   style={{
-                    background:'rgba(255,255,255,0.82)',
+                    background:'rgba(255,255,255,0.38)',
                     color:'#a83232',
                     border:'1px solid #e6eaf1',
                     borderRadius:10,
                     fontWeight:600,
                     fontSize:14,
-                    padding:'6px 12px',
+                    padding:'7px 13px',
                     cursor:'pointer',
                     textDecoration:'none',
                     boxShadow:'0 1px 4px #0001',
                     transition:'all .15s',
                     display:'flex',
                     alignItems:'center',
-                    gap:5,
-                    minWidth:0
+                    gap:5
                   }}
-                  onMouseOver={e=>{e.currentTarget.style.background='rgba(255,245,245,0.95)';e.currentTarget.style.transform='scale(1.07)';}}
-                  onMouseOut={e=>{e.currentTarget.style.background='rgba(255,255,255,0.82)';e.currentTarget.style.transform='none';}}
+                  onMouseOver={e=>{e.currentTarget.style.background='rgba(255,255,255,0.55)';e.currentTarget.style.transform='translateY(-1px) scale(1.03)';}}
+                  onMouseOut={e=>{e.currentTarget.style.background='rgba(255,255,255,0.38)';e.currentTarget.style.transform='none';}}
                   onClick={()=>setShowDepremPopup(true)}
                 >
                   <span style={{fontSize:16,marginRight:2}}>🕑</span> Son Depremler
                 </button>
                 <button
                   style={{
-                    background:'rgba(255,255,255,0.82)',
+                    background:'rgba(255,255,255,0.38)',
                     color:'#a83232',
                     border:'1px solid #e6eaf1',
                     borderRadius:10,
                     fontWeight:600,
                     fontSize:14,
-                    padding:'6px 12px',
+                    padding:'7px 13px',
                     cursor:'pointer',
                     textDecoration:'none',
                     boxShadow:'0 1px 4px #0001',
                     transition:'all .15s',
                     display:'flex',
                     alignItems:'center',
-                    gap:5,
-                    minWidth:0
+                    gap:5
                   }}
-                  onMouseOver={e=>{e.currentTarget.style.background='rgba(255,245,245,0.95)';e.currentTarget.style.transform='scale(1.07)';}}
-                  onMouseOut={e=>{e.currentTarget.style.background='rgba(255,255,255,0.82)';e.currentTarget.style.transform='none';}}
+                  onMouseOver={e=>{e.currentTarget.style.background='rgba(255,255,255,0.55)';e.currentTarget.style.transform='translateY(-1px) scale(1.03)';}}
+                  onMouseOut={e=>{e.currentTarget.style.background='rgba(255,255,255,0.38)';e.currentTarget.style.transform='none';}}
                   onClick={()=>setShowAboutPopup(true)}
                 >
                   <span style={{fontSize:16,marginRight:2}}>ℹ️</span> Hakkımızda
                 </button>
                 <button
                   style={{
-                    background:'rgba(255,255,255,0.82)',
+                    background:'rgba(255,255,255,0.38)',
                     color:'#a83232',
                     border:'1px solid #e6eaf1',
                     borderRadius:10,
                     fontWeight:600,
                     fontSize:14,
-                    padding:'6px 12px',
+                    padding:'7px 13px',
                     cursor:'pointer',
                     boxShadow:'0 1px 4px #0001',
                     transition:'all .15s',
-                    minWidth:0,
+                    minWidth:90,
                     display:'flex',
                     alignItems:'center',
                     gap:5
                   }}
-                  onMouseOver={e=>{e.currentTarget.style.background='rgba(255,245,245,0.95)';e.currentTarget.style.transform='scale(1.07)';}}
-                  onMouseOut={e=>{e.currentTarget.style.background='rgba(255,255,255,0.82)';e.currentTarget.style.transform='none';}}
+                  onMouseOver={e=>{e.currentTarget.style.background='rgba(255,255,255,0.55)';e.currentTarget.style.transform='translateY(-1px) scale(1.03)';}}
+                  onMouseOut={e=>{e.currentTarget.style.background='rgba(255,255,255,0.38)';e.currentTarget.style.transform='none';}}
                   onClick={()=>setShowRiskBand(v=>!v)}
                 >
-                  <span style={{fontSize:16,marginRight:2}}>🌫️</span> {showRiskBand ? 'Risk Bandı' : 'Risk Açık'}
-                </button>
-              </div>
-            ) : (
-              <div
-                style={{
-                  position:'fixed',
-                  top:28,
-                  right:28,
-                  zIndex:2500,
-                  minWidth:280,
-                  background:'linear-gradient(135deg,rgba(255,255,255,0.84) 60%,rgba(240,244,255,0.93) 100%)',
-                  borderRadius:26,
-                  boxShadow:'0 10px 48px 0 #295c8a22, 0 1.5px 0 #fff8',
-                  padding:'22px 32px 22px 32px',
-                  display:'flex',
-                  flexDirection:'row',
-                  alignItems:'center',
-                  gap:22,
-                  backdropFilter:'blur(18px)',
-                  border:'2.5px solid #e6eaf1',
-                  fontFamily:'Inter,Segoe UI,sans-serif',
-                  transition:'all .28s cubic-bezier(.4,1.4,.5,1)',
-                  willChange:'transform',
-                  overflow:'visible',
-                }}
-                onMouseOver={e=>e.currentTarget.style.transform='scale(1.035)'}
-                onMouseOut={e=>e.currentTarget.style.transform='none'}
-              >
-                <span style={{fontSize:31,marginRight:10,marginLeft:-8,opacity:0.95,filter:'drop-shadow(0 1px 6px #a8323233)'}} role="img" aria-label="Türkiye">🇹🇷</span>
-                <button
-                  style={{
-                    background:'#f7f7f9',
-                    color:'#2a2a2a',
-                    border:'1.5px solid #d6d6d6',
-                    borderRadius:14,
-                    fontWeight:600,
-                    fontSize:17,
-                    padding:'10px 18px',
-                    cursor:'pointer',
-                    textDecoration:'none',
-                    boxShadow:'0 2px 8px #0001',
-                    transition:'all .18s',
-                    display:'flex',
-                    alignItems:'center',
-                    gap:7
-                  }}
-                  onMouseOver={e=>{e.currentTarget.style.background='#e9e9ee';e.currentTarget.style.transform='translateY(-2px) scale(1.04)';}}
-                  onMouseOut={e=>{e.currentTarget.style.background='#f7f7f9';e.currentTarget.style.transform='none';}}
-                  onClick={()=>setShowDepremPopup(true)}
-                >
-                  <span style={{fontSize:18,marginRight:4}}>🕑</span> Son Depremler
-                </button>
-                <button
-                  style={{
-                    background:'#f7f7f9',
-                    color:'#2a2a2a',
-                    border:'1.5px solid #d6d6d6',
-                    borderRadius:14,
-                    fontWeight:600,
-                    fontSize:17,
-                    padding:'10px 18px',
-                    cursor:'pointer',
-                    textDecoration:'none',
-                    boxShadow:'0 2px 8px #0001',
-                    transition:'all .18s',
-                    display:'flex',
-                    alignItems:'center',
-                    gap:7
-                  }}
-                  onMouseOver={e=>{e.currentTarget.style.background='#e9e9ee';e.currentTarget.style.transform='translateY(-2px) scale(1.04)';}}
-                  onMouseOut={e=>{e.currentTarget.style.background='#f7f7f9';e.currentTarget.style.transform='none';}}
-                  onClick={()=>setShowAboutPopup(true)}
-                >
-                  <span style={{fontSize:18,marginRight:4}}>ℹ️</span> Hakkımızda
-                </button>
-                <button
-                  style={{
-                    background:'#f7f7f9',
-                    color:'#2a2a2a',
-                    border:'1.5px solid #d6d6d6',
-                    borderRadius:14,
-                    fontWeight:600,
-                    fontSize:17,
-                    padding:'10px 18px',
-                    cursor:'pointer',
-                    boxShadow:'0 2px 8px #0001',
-                    transition:'all .18s',
-                    minWidth:150,
-                    display:'flex',
-                    alignItems:'center',
-                    gap:7
-                  }}
-                  onMouseOver={e=>{e.currentTarget.style.background='#e9e9ee';e.currentTarget.style.transform='translateY(-2px) scale(1.04)';}}
-                  onMouseOut={e=>{e.currentTarget.style.background='#f7f7f9';e.currentTarget.style.transform='none';}}
-                  onClick={()=>setShowRiskBand(v=>!v)}
-                >
-                  <span style={{fontSize:18,marginRight:4}}>🌫️</span> {showRiskBand ? 'Risk Bandını Gizle' : 'Risk Bandını Göster'}
+                  <span style={{fontSize:16,marginRight:2}}>🌫️</span> {showRiskBand ? 'Risk Bandı' : 'Risk Bandı'}
                 </button>
               </div>
             )}
