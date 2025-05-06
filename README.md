@@ -1,24 +1,24 @@
-# Deprem Harita Uygulaması
+ Deprem Haritası (Earthquake Map) – Proje Dokümantasyonu
+Türkiye ve çevresindeki son depremleri canlı olarak izleyebileceğiniz modern, interaktif bir harita uygulaması.
 
-Bu proje, AFAD'ın sağladığı son depremleri harita üzerinde gösteren bir web uygulamasıdır.
+🔧 Kullanılan Teknolojiler:
 
-## Kullanılan Teknolojiler
-- React (CRA PWA template)
-- Leaflet (harita için)
-- Axios (veri çekmek için)
+React
 
-## Başlangıç
+React-Leaflet
 
-1. Gerekli bağımlılıkları yükleyin:
-   ```bash
-   npm install
-   npm install leaflet react-leaflet axios
-   ```
-2. Uygulamayı başlatın:
-   ```bash
-   npm start
-   ```
+Axios
 
-## Özellikler
-- Son depremler otomatik olarak AFAD'dan çekilir.
-- Harita üzerinde depremler işaretlenir ve tıklanınca detaylar gösterilir.
+Modern CSS
+
+🛠️ Özellikler:
+
+Canlı Deprem Takibi: Son depremler animasyonlu markerlarla gösterilir.
+
+Responsive Tasarım: Her cihazda uyumlu, mobil uyumlu arayüz.
+
+Popup ve Tablo: Marker tıklanınca detaylar gösterilir.
+
+Fay/Risk Bantları: Türkiye fay hatları ve risk bantları harita üzerinde gösterilebilir/gizlenebilir.
+
+Mobil UX: Sadece ikonlar şeklinde floating action menu.
