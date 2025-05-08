@@ -31,10 +31,6 @@ export default function BlinkingMarker({ position, popupContent, icon }) {
     }
   }, [position]);
 
-  useEffect(() => {
-    map.setView(position, map.getZoom());
-  }, [position, map]);
-
   return (
     <Marker icon={icon || BlinkingIcon} position={position} ref={markerRef}>
       <Popup autoPan={false} closeButton={false} className="custom-popup">

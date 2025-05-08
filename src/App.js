@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, ImageOverlay } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, ImageOverlay, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -42,9 +42,38 @@ function parseAFADTable(htmlString) {
   });
 }
 
+function MapEvents() {
+  const map = useMap();
+  
+  useEffect(() => {
+    map.on('moveend', () => {
+      const center = map.getCenter();
+      const zoom = map.getZoom();
+      const params = new URLSearchParams(window.location.search);
+      params.set('lat', center.lat);
+      params.set('lng', center.lng);
+      params.set('zoom', zoom);
+      window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
+    });
+  }, [map]);
+
+  return null;
+}
+
 function Home() {
   const [quakes, setQuakes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [mapPosition, setMapPosition] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const lat = parseFloat(params.get('lat'));
+    const lng = parseFloat(params.get('lng'));
+    const zoom = parseInt(params.get('zoom'));
+    return lat && lng && zoom ? [lat, lng] : [39.0, 35.0];
+  });
+  const [mapZoom, setMapZoom] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return parseInt(params.get('zoom')) || 5;
+  });
 
   useEffect(() => {
     async function fetchQuakes() {
@@ -489,7 +518,12 @@ const redIcon = new L.Icon({
                 </div>
               </div>
             )}
-            <MapContainer center={[39.0, 35.0]} zoom={5} style={{ height: '100vh', width: '100vw' }}>
+            <MapContainer 
+              center={mapPosition} 
+              zoom={mapZoom} 
+              style={{ height: '100vh', width: '100vw' }}
+            >
+              <MapEvents />
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
