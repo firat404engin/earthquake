@@ -7,6 +7,8 @@ import 'leaflet/dist/leaflet.css';
 import './App.css';
 import BlinkingMarker, { GreenBlinkingIcon } from './BlinkingMarker';
 import Last100 from './Last100';
+import History from './History';
+import { LANG, getText } from './i18n';
 
 import TurkeyHeatLayer from './TurkeyHeatLayer';
 
@@ -26,20 +28,56 @@ L.Icon.Default.mergeOptions({
 function parseAFADTable(htmlString) {
   const parser = new window.DOMParser();
   const doc = parser.parseFromString(htmlString, 'text/html');
-  const rows = Array.from(doc.querySelectorAll('table tbody tr'));
-  return rows.map(row => {
-    const cells = row.querySelectorAll('td');
-    return {
-      date: cells[0]?.textContent.trim(),
-      time: cells[1]?.textContent.trim(),
-      latitude: parseFloat(cells[2]?.textContent.replace(',', '.')),
-      longitude: parseFloat(cells[3]?.textContent.replace(',', '.')),
-      depth: cells[4]?.textContent.trim(),
-      magnitude: cells[5]?.textContent.trim(),
-      location: cells[6]?.textContent.trim(),
-      type: cells[7]?.textContent.trim(),
-    };
-  });
+  // Bazı proxy çıktılarında tbody olmayabiliyor
+  const rows = Array.from(doc.querySelectorAll('table tr'));
+  let parsed = rows
+    .map(row => {
+      const cells = row.querySelectorAll('td');
+      if (!cells || cells.length < 6) return null;
+      // Güncel AFAD şeması: 0 Tarih(TS), 1 Enlem, 2 Boylam, 3 Derinlik, 4 Tip, 5 Büyüklük, 6 Yer (bazı çıktılarda 6. hücre olmayabilir)
+      let ts = cells[0]?.textContent?.trim() || '';
+      ts = ts.replace('T', ' ');
+      let date = '', time = '';
+      if (ts) {
+        const parts = ts.split(/\s+/);
+        if (parts.length >= 2) { date = parts[0]; time = parts[1]; }
+        else {
+          const m = ts.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}(?::\d{2})?)/);
+          if (m) { date = m[1]; time = m[2]; } else { date = ts; }
+        }
+      }
+      const latitude = parseFloat((cells[1]?.textContent || '').replace(',', '.'));
+      const longitude = parseFloat((cells[2]?.textContent || '').replace(',', '.'));
+      const depth = cells[3]?.textContent?.trim?.() || '';
+      const magnitude = (cells[5] || cells[4])?.textContent?.trim?.() || '';
+      const location = (cells[6] || cells[5])?.textContent?.trim?.() || '';
+      return { ts: ts, date, time, latitude, longitude, depth, magnitude, location, type: 'AFAD' };
+    })
+    .filter(Boolean);
+
+  // Eğer HTML tablo bulunamadıysa, r.jina.ai'nin Markdown tablosunu çöz
+  if (parsed.length === 0) {
+    const lines = String(htmlString).split(/\r?\n/);
+    parsed = lines
+      .filter(l => l.startsWith('|') && /\d{4}-\d{2}-\d{2}/.test(l))
+      .map(l => l.replace(/^\|\s*/, '').replace(/\s*\|\s*$/, ''))
+      .map(l => l.split(/\s*\|\s*/))
+      .map(cols => {
+        if (cols.length < 7) return null;
+        const ts = (cols[0] || '').trim().replace('T', ' ');
+        const parts = ts.split(/\s+/);
+        const date = parts[0] || '';
+        const time = parts[1] || '';
+        const latitude = parseFloat((cols[1] || '').replace(',', '.'));
+        const longitude = parseFloat((cols[2] || '').replace(',', '.'));
+        const depth = (cols[3] || '').trim();
+        const magnitude = (cols[5] || '').trim();
+        const location = (cols[6] || '').trim();
+        return { ts, date, time, latitude, longitude, depth, magnitude, location, type: 'AFAD' };
+      })
+      .filter(Boolean);
+  }
+  return parsed;
 }
 
 function MapEvents() {
@@ -63,6 +101,7 @@ function MapEvents() {
 function Home() {
   const [quakes, setQuakes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [lang, setLang] = useState(() => (localStorage.getItem('lang') || LANG.TR));
   const [mapPosition, setMapPosition] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     const lat = parseFloat(params.get('lat'));
@@ -76,34 +115,46 @@ function Home() {
   });
 
   useEffect(() => {
+    localStorage.setItem('lang', lang);
+  }, [lang]);
+
+  useEffect(() => {
     async function fetchQuakes() {
       try {
-        const { data } = await axios.get('https://api.orhanaydogdu.com.tr/deprem/kandilli/live');
-        data.result.slice(0, 3).forEach((q, i) => {
-          console.log(`Deprem ${i+1}: coordinates=`, q.geojson.coordinates, 'title=', q.title);
-        });
-        const parsed = data.result.map(q => ({
-          date: q.date.split(' ')[0],
-          time: q.date.split(' ')[1],
-          latitude: q.geojson.coordinates[1],
-          longitude: q.geojson.coordinates[0],
-          depth: q.depth,
-          magnitude: q.mag,
-          location: q.title,
-          type: q.provider
-        }));
-        parsed.slice(0, 3).forEach((q, i) => {
-          console.log(`Parsed ${i+1}: lat=`, q.latitude, 'lng=', q.longitude, 'title=', q.location);
-        });
-        setQuakes(parsed);
+        // Birincil kaynak: AFAD Son Depremler (HTML/Markdown)
+        const { data: html } = await axios.get('https://r.jina.ai/https://deprem.afad.gov.tr/last-earthquakes.html');
+        const parsedAfad = parseAFADTable(String(html))
+          .filter(q => typeof q.latitude === 'number' && typeof q.longitude === 'number' && !isNaN(q.latitude) && !isNaN(q.longitude));
+        if (parsedAfad.length > 0) {
+          setQuakes(parsedAfad);
+          return;
+        }
+        throw new Error('AFAD empty');
       } catch (err) {
-        setQuakes([]);
+        // Yedek kaynak: Orhan Aydoğdu Kandilli API
+        try {
+          const { data } = await axios.get('https://api.orhanaydogdu.com.tr/deprem/kandilli/live');
+          const parsedKandilli = Array.isArray(data?.result) ? data.result.map(q => ({
+            ts: q?.date || '',
+            date: (q?.date || '').split(' ')[0],
+            time: (q?.date || '').split(' ')[1],
+            latitude: q?.geojson?.coordinates?.[1],
+            longitude: q?.geojson?.coordinates?.[0],
+            depth: q?.depth,
+            magnitude: q?.mag,
+            location: q?.title,
+            type: q?.provider
+          })) : [];
+          setQuakes(parsedKandilli);
+        } catch (err2) {
+          setQuakes([]);
+        }
       } finally {
         setLoading(false);
       }
     }
     fetchQuakes();
-    const interval = setInterval(fetchQuakes, 12000); // 12 saniyede bir güncelle
+    const interval = setInterval(fetchQuakes, 30000); // 30 saniyede bir güncelle
     return () => clearInterval(interval);
   }, []);
 
@@ -115,6 +166,7 @@ function Home() {
   const [showRiskBand, setShowRiskBand] = useState(true);
   const [showDepremPopup, setShowDepremPopup] = useState(false);
   const [showAboutPopup, setShowAboutPopup] = useState(false);
+  const [showHistoryPopup, setShowHistoryPopup] = useState(false);
 
   // ESC ve arkaplan tıklamasıyla popup kapama fonksiyonu
   useEffect(() => {
@@ -122,6 +174,7 @@ function Home() {
       if (e.key === 'Escape') {
         setShowDepremPopup(false);
         setShowAboutPopup(false);
+        setShowHistoryPopup(false);
       }
     }
     window.addEventListener('keydown', handleKey);
@@ -131,6 +184,7 @@ function Home() {
   function closeAllPopups() {
     setShowDepremPopup(false);
     setShowAboutPopup(false);
+    setShowHistoryPopup(false);
   }
 
 // Büyük kırmızı marker
@@ -228,10 +282,57 @@ const redIcon = new L.Icon({
                     width:44,
                     height:44,
                   }}
+                  aria-label="Geçmiş Depremler"
+                  onClick={()=>setShowHistoryPopup(true)}
+                >
+                  <span style={{fontSize:22}}>🗂️</span>
+                </button>
+                <button
+                  style={{
+                    background:'#f7f7f9',
+                    color:'#2a2a2a',
+                    border:'1.5px solid #d6d6d6',
+                    borderRadius:12,
+                    fontWeight:600,
+                    fontSize:20,
+                    padding:'10px',
+                    cursor:'pointer',
+                    textDecoration:'none',
+                    boxShadow:'0 2px 8px #0001',
+                    transition:'all .18s',
+                    display:'flex',
+                    alignItems:'center',
+                    justifyContent:'center',
+                    width:44,
+                    height:44,
+                  }}
                   aria-label="Hakkımızda"
                   onClick={()=>setShowAboutPopup(true)}
                 >
                   <span style={{fontSize:26}}>ℹ️</span>
+                </button>
+                <button
+                  style={{
+                    background:'rgba(255,255,255,0.38)',
+                    color:'#a83232',
+                    border:'1px solid #e6eaf1',
+                    borderRadius:10,
+                    fontWeight:600,
+                    fontSize:14,
+                    padding:'7px 13px',
+                    cursor:'pointer',
+                    textDecoration:'none',
+                    boxShadow:'0 1px 4px #0001',
+                    transition:'all .15s',
+                    display:'flex',
+                    alignItems:'center',
+                    gap:5
+                  }}
+                  onMouseOver={e=>{e.currentTarget.style.background='rgba(255,255,255,0.55)';e.currentTarget.style.transform='translateY(-1px) scale(1.03)';}}
+                  onMouseOut={e=>{e.currentTarget.style.background='rgba(255,255,255,0.38)';e.currentTarget.style.transform='none';}}
+                  onClick={()=>setShowHistoryPopup(true)}
+                >
+                  <span style={{fontSize:16,marginRight:2}}>🗂️</span> Geçmiş Depremler
                 </button>
                 <button
                   style={{
@@ -284,7 +385,18 @@ const redIcon = new L.Icon({
                 onMouseOver={e=>e.currentTarget.style.transform='scale(1.04)'}
                 onMouseOut={e=>e.currentTarget.style.transform='none'}
               >
-                <span style={{fontSize:22,marginRight:6,marginLeft:-4,opacity:0.92,filter:'drop-shadow(0 1px 4px #a8323222)'}} role="img" aria-label="Türkiye">🇹🇷</span>
+                <button
+                  onClick={()=>setLang(l=> l===LANG.TR ? LANG.EN : LANG.TR)}
+                  style={{
+                    background:'rgba(255,255,255,0.8)',
+                    border:'1px solid #e6eaf1',
+                    borderRadius:10,
+                    fontWeight:800,
+                    padding:'6px 10px',
+                    cursor:'pointer',
+                    boxShadow:'0 1px 3px #0001'
+                  }}
+                >{lang===LANG.TR?'TR':'EN'}</button>
                 <button
                   style={{
                     background:'rgba(255,255,255,0.38)',
@@ -306,7 +418,30 @@ const redIcon = new L.Icon({
                   onMouseOut={e=>{e.currentTarget.style.background='rgba(255,255,255,0.38)';e.currentTarget.style.transform='none';}}
                   onClick={()=>setShowDepremPopup(true)}
                 >
-                  <span style={{fontSize:16,marginRight:2}}>🕑</span> Son Depremler
+                  <span style={{fontSize:16,marginRight:2}}>🕑</span> {getText(lang,'lastQuakes')}
+                </button>
+                <button
+                  style={{
+                    background:'rgba(255,255,255,0.38)',
+                    color:'#a83232',
+                    border:'1px solid #e6eaf1',
+                    borderRadius:10,
+                    fontWeight:600,
+                    fontSize:14,
+                    padding:'7px 13px',
+                    cursor:'pointer',
+                    textDecoration:'none',
+                    boxShadow:'0 1px 4px #0001',
+                    transition:'all .15s',
+                    display:'flex',
+                    alignItems:'center',
+                    gap:5
+                  }}
+                  onMouseOver={e=>{e.currentTarget.style.background='rgba(255,255,255,0.55)';e.currentTarget.style.transform='translateY(-1px) scale(1.03)';}}
+                  onMouseOut={e=>{e.currentTarget.style.background='rgba(255,255,255,0.38)';e.currentTarget.style.transform='none';}}
+                  onClick={()=>setShowHistoryPopup(true)}
+                >
+                  <span style={{fontSize:16,marginRight:2}}>🗂️</span> {getText(lang,'history')}
                 </button>
                 <button
                   style={{
@@ -329,7 +464,7 @@ const redIcon = new L.Icon({
                   onMouseOut={e=>{e.currentTarget.style.background='rgba(255,255,255,0.38)';e.currentTarget.style.transform='none';}}
                   onClick={()=>setShowAboutPopup(true)}
                 >
-                  <span style={{fontSize:16,marginRight:2}}>ℹ️</span> Hakkımızda
+                  <span style={{fontSize:16,marginRight:2}}>ℹ️</span> {getText(lang,'about')}
                 </button>
                 <button
                   style={{
@@ -352,13 +487,13 @@ const redIcon = new L.Icon({
                   onMouseOut={e=>{e.currentTarget.style.background='rgba(255,255,255,0.38)';e.currentTarget.style.transform='none';}}
                   onClick={()=>setShowRiskBand(v=>!v)}
                 >
-                  <span style={{fontSize:16,marginRight:2}}>🌫️</span> {showRiskBand ? 'Risk Bandı' : 'Risk Bandı'}
+                  <span style={{fontSize:16,marginRight:2}}>🌫️</span> {getText(lang,'riskBand')}
                 </button>
               </div>
             )}
 
             {/* Modern popup overlay */}
-            {(showDepremPopup || showAboutPopup) && (
+            {(showDepremPopup || showAboutPopup || showHistoryPopup) && (
               <div
                 style={{
                   position:'fixed',
@@ -377,11 +512,11 @@ const redIcon = new L.Icon({
                   style={{
                     minWidth:320,
                     maxWidth:'96vw',
-                    minHeight:showDepremPopup?220:120,
+                    minHeight:(showDepremPopup||showHistoryPopup)?220:120,
                     background:'linear-gradient(135deg,#fff 85%,#f3f5fa 100%)',
                     borderRadius:22,
                     boxShadow:'0 8px 60px #0004',
-                    padding: showDepremPopup ? '12px 2vw 10px 2vw' : '28px 28px 18px 28px',
+                    padding: (showDepremPopup||showHistoryPopup) ? '12px 2vw 10px 2vw' : '28px 28px 18px 28px',
                     position:'relative',
                     display:'flex',
                     flexDirection:'column',
@@ -422,7 +557,13 @@ const redIcon = new L.Icon({
                   {showDepremPopup && (
                     <div style={{width:'100%',maxWidth:540}}>
                       <h2 style={{margin:'0 0 18px 0',fontWeight:700,fontSize:26,color:'#a83232',letterSpacing:0.5}}></h2>
-                      <Last100 />
+                      <Last100 lang={lang} />
+                    </div>
+                  )}
+                  {showHistoryPopup && (
+                    <div style={{width:'100%',maxWidth:900}}>
+                      <h2 style={{margin:'0 0 18px 0',fontWeight:700,fontSize:26,color:'#a83232',letterSpacing:0.5}}></h2>
+                      <History lang={lang} />
                     </div>
                   )}
                   {showAboutPopup && (
@@ -551,8 +692,8 @@ const redIcon = new L.Icon({
       position={[q.latitude, q.longitude]}
       popupContent={{
         title: q.location,
-        date: q.date,
-        time: q.time,
+        date: q.date || q.ts?.split(' ')[0],
+        time: q.time || q.ts?.split(' ')[1],
         mag: q.magnitude,
         depth: q.depth
       }}
@@ -570,8 +711,8 @@ const redIcon = new L.Icon({
       position={[q.latitude, q.longitude]}
       popupContent={{
         title: q.location,
-        date: q.date,
-        time: q.time,
+        date: q.date || q.ts?.split(' ')[0],
+        time: q.time || q.ts?.split(' ')[1],
         mag: q.magnitude,
         depth: q.depth
       }}
@@ -592,6 +733,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/last100" element={<Last100 />} />
+        <Route path="/history" element={<History />} />
       </Routes>
     </Router>
   );
