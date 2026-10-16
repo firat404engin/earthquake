@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/last100", "destination": "/index.html" },
+    { "source": "/history", "destination": "/index.html" }
+  ],
+  "functions": { "api/earthquakes.js": { "maxDuration": 40 } }
+}
