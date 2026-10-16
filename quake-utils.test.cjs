@@ -1,0 +1,10 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { normalizeAfad, normalizeKandilli, filterQuakes, utcTimestamp } = require('./src/quake-utils');
+const base={ eventID:'1',date:'2026-10-16T21:22:19',latitude:'39.4',longitude:'40.01',magnitude:'1.3',depth:'0',type:'ML',location:'Pülümür (Tunceli)' };
+test('AFAD UTC is explicit and zero depth is preserved',()=>{const [q]=normalizeAfad([base]);assert.equal(q.time,'2026-10-16T21:22:19.000Z');assert.equal(q.depth,0);assert.equal(q.magnitudeType,'ML');});
+test('invalid coordinates, magnitude and duplicate IDs are rejected',()=>{assert.equal(normalizeAfad([base,base,{...base,eventID:'2',latitude:''},{...base,eventID:'3',longitude:'200'},{...base,eventID:'4',magnitude:'bad'}]).length,1);});
+test('records are sorted by event time, not source order',()=>{assert.equal(normalizeAfad([base,{...base,eventID:'2',date:'2026-10-17T00:00:00'}])[0].id,'afad-2');});
+test('Turkish search and time and magnitude filters compose',()=>{const data=normalizeAfad([base,{...base,eventID:'2',location:'İZMİR',magnitude:'4.1'}]);assert.equal(filterQuakes(data,{search:'izmir',minimum:4,hours:1,now:Date.parse('2026-10-16T21:50:00Z')}).length,1);assert.equal(filterQuakes(data,{hours:1,now:Date.parse('2026-10-17T01:00:00Z')}).length,0);});
+test('Kandilli local date is converted to UTC',()=>{const [q]=normalizeKandilli([{earthquake_id:'a',date:'2026.10.17 00:22:19',geojson:{coordinates:[40,39]},mag:1.3,depth:7,title:'TUNCELI'}]);assert.equal(q.time,'2026-10-16T21:22:19.000Z');});
+test('invalid dates do not become displayable timestamps',()=>{assert.equal(utcTimestamp('not a date'),null);});
