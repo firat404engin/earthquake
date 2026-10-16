@@ -1,19 +1,21 @@
 import { useEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet.heat";
 
 export default function TurkeyHeatLayer({ data }) {
   const map = useMap();
   const heatRef = useRef(null);
 
   useEffect(() => {
-    if (!map || !window.L || !window.L.heatLayer || !Array.isArray(data) || data.length === 0) return;
+    if (!map || !L.heatLayer || !Array.isArray(data) || data.length === 0) return;
 
     if (heatRef.current) {
       heatRef.current.remove();
       heatRef.current = null;
     }
 
-    heatRef.current = window.L.heatLayer(data, {
+    heatRef.current = L.heatLayer(data, {
       radius: 28,
       blur: 22,
       maxZoom: 8,
